@@ -1,0 +1,61 @@
+from PIL import Image
+import pytesseract
+from os import path
+import cv2
+import numpy as np
+pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+
+def extract_text_from_image(image):
+    text = pytesseract.image_to_string(image)
+    return text
+
+def reduce_noise(image_path):
+   
+    image = cv2.imread(image_path)
+
+    if image is None:
+        print("Error: Could not read the image.")
+        return None
+
+    denoised = cv2.fastNlMeansDenoisingColored(image, None, 10, 10, 7, 21)
+
+  
+    denoised_image = Image.fromarray(cv2.cvtColor(denoised, cv2.COLOR_BGR2RGB))
+    return denoised_image
+
+def process_image(image_path):
+    
+    if not path.exists(image_path):
+        return "Error: Image file not found."
+
+    try:
+       
+        image = Image.open(image_path)
+
+        
+        text = extract_text_from_image(image)
+
+        
+        if not text.strip():
+            print("No text found in the image. Applying noise reduction...")
+            denoised_image = reduce_noise(image_path)
+            if denoised_image:
+                text = extract_text_from_image(denoised_image)
+                if not text.strip():
+                    return "No text found in the image even after noise reduction."
+            else:
+                return "Error: Noise reduction failed."
+        return text
+
+    except (FileNotFoundError, OSError) as e:
+        return f"Error: Failed to open image. Reason: {e}"
+    except pytesseract.pytesseract.TesseractError as e:
+        return f"Error: Tesseract error during OCR. Reason: {e}"
+    except Exception as e:
+        return f"An unexpected error occurred: {e}"
+
+
+image_path = r'C:\Users\Nasser\Desktop\AI\77.png'  # Replace with your image path
+result = process_image(image_path)
+
+print(result)  
